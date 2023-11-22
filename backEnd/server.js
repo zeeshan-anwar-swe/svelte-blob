@@ -23,19 +23,35 @@ if (!fs.existsSync(uploadsDir)) {
 
 const dirPath = path.join(__dirname, "images");
 
-server.get("/images", (req, res) => {
-    fs.readdir(dirPath, (err, files) => {
-        if (err) {
-            res.status(500).send("Internal Server Error");
-        } else {
-            const imageSources = files.map((file) => {
-                const imagePath = path.join(dirPath, file);
-                const imgBlob = fs.readFileSync(imagePath).toString("base64");
-                return `data:image/jpeg;base64,${imgBlob}`;
-            });
-            res.json({ imageSources });
-        }
-    });
+// server.get("/images", (req, res) => {
+//     fs.readdir(dirPath, (err, files) => {
+//         if (err) {
+//             res.status(500).send("Internal Server Error");
+//         } else {
+//             const imageSources = files.map((file) => {
+//                 const imagePath = path.join(dirPath, file);
+//                 const imgBlob = fs.readFileSync(imagePath).toString("base64");
+//                 return `data:image/jpeg;base64,${imgBlob}`;
+//             });
+//             res.json({ imageSources });
+//         }
+//     });
+// });
+
+
+server.get("/images", async (req, res) => {
+    try {
+        const imagesList = await ImagesList.find();
+        const imageSources = await Promise.all(imagesList.map(async (image) => {
+            const imagePath = path.join(__dirname, image.imageUrl);
+            const imgBlob = fs.readFileSync(imagePath).toString("base64");
+            return `data:image/jpeg;base64,${imgBlob}`;
+        }));
+        res.json({ imageSources });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
 });
 
 server.post("/upload", async (req, res) => {
